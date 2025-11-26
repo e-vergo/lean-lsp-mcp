@@ -534,6 +534,44 @@ uv run pytest tests
 - [LeanTool](https://github.com/GasStationManager/LeanTool)
 - [LeanExplore MCP](https://www.leanexplore.com/docs/mcp)
 
+## LAL Integration (Fork Feature)
+
+This fork includes [LAL (Lean Auto Linter)](https://github.com/e-vergo/LAL) integration for auto-fixing mechanical linter warnings.
+
+### Supported Fixes
+
+| Fixer | Transformation |
+|-------|----------------|
+| unusedVariables | `unused` → `_unused` |
+| cdot | `.` → `·` |
+| lambdaSyntax | `λ` → `fun` |
+| dollarSyntax | `$` → `<\|` |
+| tryThis | Apply "Try this:" suggestions |
+| unusedSimpArgs | Remove unused simp arguments |
+
+### Setup LAL
+
+1. Clone and build LAL:
+   ```bash
+   git clone https://github.com/e-vergo/LAL
+   cd LAL && lake build lal
+   ```
+
+2. Set environment variable (optional, auto-detected if LAL is sibling to project):
+   ```bash
+   export LAL_PATH=/path/to/LAL/.lake/build/bin/lal
+   ```
+
+### Using lal_fix_diagnostics
+
+```python
+# Dry run - see what would be fixed
+lal_fix_diagnostics(file_path="/path/to/file.lean", dry_run=True)
+
+# Apply fixes
+lal_fix_diagnostics(file_path="/path/to/file.lean", dry_run=False)
+```
+
 ## License & Citation
 
 **MIT** licensed. See [LICENSE](LICENSE) for more information.

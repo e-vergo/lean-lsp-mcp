@@ -39,6 +39,7 @@ from lean_lsp_mcp.utils import (
     get_declaration_range,
     OptionalTokenVerifier,
 )
+from lean_lsp_mcp.lal_utils import find_lal_binary, run_lal
 
 
 _LOG_LEVEL = os.environ.get("LEAN_LOG_LEVEL", "INFO")
@@ -1022,6 +1023,54 @@ def hammer_premise(
         return results
     except Exception as e:
         return f"lean hammer premise error:\n{str(e)}"
+
+
+@mcp.tool("lal_fix_diagnostics")
+def lal_fix_diagnostics(
+    ctx: Context,
+    file_path: str,
+    dry_run: bool = True
+) -> str:
+    """
+    Auto-fix mechanical linter warnings using LAL (Lean Auto Linter).
+
+    Fixes: unused variables, cdot style, lambda syntax, dollar syntax,
+    "Try this:" suggestions, unused simp arguments.
+
+    Args:
+        file_path (str): Abs path to Lean file
+        dry_run (bool): If True, show fixes without applying (default: True)
+
+    Returns:
+        str: JSON with fixes applied/proposed, or error message
+    """
+    import json
+
+    lifespan_context = ctx.request_context.lifespan_context
+    project_path = lifespan_context.lean_project_path
+
+    if project_path is None:
+        return json.dumps({
+            "error": "Lean project path not set",
+            "hint": "Call a file-based tool first to set the project path"
+        })
+
+    lal_path = find_lal_binary(project_path)
+    if not lal_path:
+        return json.dumps({
+            "error": "LAL binary not found",
+            "hint": "Set LAL_PATH env var or build LAL: git clone https://github.com/e-vergo/LAL && cd LAL && lake build lal"
+        })
+
+    # Resolve file path
+    if not os.path.isabs(file_path):
+        file_path = str(project_path / file_path)
+
+    if not os.path.exists(file_path):
+        return json.dumps({"error": f"File not found: {file_path}"})
+
+    result = run_lal(lal_path, file_path, dry_run)
+    return json.dumps(result)
 
 
 if __name__ == "__main__":
