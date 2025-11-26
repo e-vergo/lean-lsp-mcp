@@ -47,15 +47,19 @@ def run_lal(
     lal_path: str,
     file_path: str,
     dry_run: bool = True,
+    recursive: bool = False,
+    glob_pattern: Optional[str] = None,
     timeout: int = 60
 ) -> dict:
     """
-    Execute LAL on a file and return results.
+    Execute LAL on a file or directory and return results.
 
     Args:
         lal_path: Path to LAL binary
-        file_path: Absolute path to Lean file
+        file_path: Absolute path to Lean file or directory
         dry_run: If True, show fixes without applying
+        recursive: If True and path is directory, process recursively
+        glob_pattern: Filter files by pattern (e.g., "**/*.lean")
         timeout: Command timeout in seconds
 
     Returns:
@@ -64,6 +68,10 @@ def run_lal(
     cmd = [lal_path, "--json"]
     if dry_run:
         cmd.append("--dry-run")
+    if recursive:
+        cmd.append("--recursive")
+    if glob_pattern:
+        cmd.extend(["--glob", glob_pattern])
     cmd.append(file_path)
 
     try:

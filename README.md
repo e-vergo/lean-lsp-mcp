@@ -565,11 +565,17 @@ This fork includes [LAL (Lean Auto Linter)](https://github.com/e-vergo/LAL) inte
 ### Using lal_fix_diagnostics
 
 ```python
-# Dry run - see what would be fixed
+# Single file - dry run
 lal_fix_diagnostics(file_path="/path/to/file.lean", dry_run=True)
 
-# Apply fixes
+# Single file - apply fixes
 lal_fix_diagnostics(file_path="/path/to/file.lean", dry_run=False)
+
+# Directory - lint all files recursively
+lal_fix_diagnostics(file_path="/path/to/src", dry_run=True, recursive=True)
+
+# Directory - apply fixes to all files
+lal_fix_diagnostics(file_path="/path/to/src", dry_run=False, recursive=True)
 ```
 
 ## License & Citation

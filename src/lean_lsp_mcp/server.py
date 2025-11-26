@@ -1029,7 +1029,9 @@ def hammer_premise(
 def lal_fix_diagnostics(
     ctx: Context,
     file_path: str,
-    dry_run: bool = True
+    dry_run: bool = True,
+    recursive: bool = False,
+    glob_pattern: str | None = None
 ) -> str:
     """
     Auto-fix mechanical linter warnings using LAL (Lean Auto Linter).
@@ -1038,8 +1040,10 @@ def lal_fix_diagnostics(
     "Try this:" suggestions, unused simp arguments.
 
     Args:
-        file_path (str): Abs path to Lean file
+        file_path (str): Abs path to Lean file or directory
         dry_run (bool): If True, show fixes without applying (default: True)
+        recursive (bool): If True and path is directory, process recursively
+        glob_pattern (str, optional): Filter files by pattern (e.g., "**/*.lean")
 
     Returns:
         str: JSON with fixes applied/proposed, or error message
@@ -1067,9 +1071,9 @@ def lal_fix_diagnostics(
         file_path = str(project_path / file_path)
 
     if not os.path.exists(file_path):
-        return json.dumps({"error": f"File not found: {file_path}"})
+        return json.dumps({"error": f"Path not found: {file_path}"})
 
-    result = run_lal(lal_path, file_path, dry_run)
+    result = run_lal(lal_path, file_path, dry_run, recursive, glob_pattern)
     return json.dumps(result)
 
 
