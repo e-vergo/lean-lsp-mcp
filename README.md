@@ -554,18 +554,7 @@ uv run pytest tests
 
 ## LAL Integration (Fork Feature)
 
-This fork includes [LAL (Lean Auto Linter)](https://github.com/e-vergo/LAL) integration for auto-fixing mechanical linter warnings.
-
-### Supported Fixes
-
-| Fixer | Transformation |
-|-------|----------------|
-| unusedVariables | `unused` → `_unused` |
-| cdot | `.` → `·` |
-| lambdaSyntax | `λ` → `fun` |
-| dollarSyntax | `$` → `<\|` |
-| tryThis | Apply "Try this:" suggestions |
-| unusedSimpArgs | Remove unused simp arguments |
+This fork includes [LAL (Lean Auto Linter)](https://github.com/e-vergo/LAL) integration for automated code analysis and fixing.
 
 ### Setup LAL
 
@@ -580,7 +569,25 @@ This fork includes [LAL (Lean Auto Linter)](https://github.com/e-vergo/LAL) inte
    export LAL_PATH=/path/to/LAL/.lake/build/bin/lal
    ```
 
-### Using lal_fix_diagnostics
+### LAL Tools
+
+#### lal_fix_diagnostics
+
+Auto-fix mechanical linter warnings in Lean files.
+
+**Supported Fixes:**
+
+| Fixer | Transformation |
+|-------|----------------|
+| unusedVariables | `unused` → `_unused` |
+| cdot | `.` → `·` |
+| lambdaSyntax | `λ` → `fun` |
+| dollarSyntax | `$` → `<\|` |
+| tryThis | Apply "Try this:" suggestions |
+| unusedSimpArgs | Remove unused simp arguments |
+
+<details>
+<summary>Example usage</summary>
 
 ```python
 # Single file - dry run
@@ -589,12 +596,132 @@ lal_fix_diagnostics(file_path="/path/to/file.lean", dry_run=True)
 # Single file - apply fixes
 lal_fix_diagnostics(file_path="/path/to/file.lean", dry_run=False)
 
-# Directory - lint all files recursively
+# Directory - recursive dry run
 lal_fix_diagnostics(file_path="/path/to/src", dry_run=True, recursive=True)
 
-# Directory - apply fixes to all files
+# Directory - recursive apply
 lal_fix_diagnostics(file_path="/path/to/src", dry_run=False, recursive=True)
 ```
+</details>
+
+#### lal_sorry_report
+
+Report `sorry` occurrences in Lean files.
+
+<details>
+<summary>Example usage</summary>
+
+```python
+# Basic report - counts only
+lal_sorry_report(file_path="/path/to/file.lean")
+
+# Verbose - include declarations and goals
+lal_sorry_report(file_path="/path/to/file.lean", verbose=True)
+
+# Directory - recursive scan
+lal_sorry_report(file_path="/path/to/src", recursive=True)
+
+# Filter by pattern
+lal_sorry_report(file_path="/path/to/src", recursive=True, glob_pattern="**/Theorem*.lean")
+```
+</details>
+
+<details>
+<summary>Example output</summary>
+
+```json
+{
+  "file": "/path/to/file.lean",
+  "sorry_count": 2,
+  "sorry_locations": [
+    {"line": 15, "column": 3},
+    {"line": 42, "column": 5}
+  ]
+}
+```
+</details>
+
+#### lal_custom_deps
+
+Report custom (non-Mathlib) dependencies in Lean files.
+
+Identifies project-local imports that are not from standard libraries (Mathlib, Batteries, Lean, Init).
+
+<details>
+<summary>Example usage</summary>
+
+```python
+# Single file
+lal_custom_deps(file_path="/path/to/file.lean")
+
+# Directory - recursive
+lal_custom_deps(file_path="/path/to/src", recursive=True)
+
+# Filter by pattern
+lal_custom_deps(file_path="/path/to/src", recursive=True, glob_pattern="**/*.lean")
+```
+</details>
+
+<details>
+<summary>Example output</summary>
+
+```json
+{
+  "file": "/path/to/file.lean",
+  "custom_deps": ["MyProject.Helper", "MyProject.Types"],
+  "custom_deps_detailed": [
+    {"name": "MyProject.Helper", "line": 3},
+    {"name": "MyProject.Types", "line": 4}
+  ]
+}
+```
+</details>
+
+#### lal_file_context
+
+Get combined file context: sorry count/locations, custom dependencies, and optional axiom information.
+
+Aggregates multiple LAL tools into a single response for quick file analysis.
+
+<details>
+<summary>Example usage</summary>
+
+```python
+# Basic context
+lal_file_context(file_path="/path/to/file.lean")
+
+# Verbose sorry details
+lal_file_context(file_path="/path/to/file.lean", verbose=True)
+
+# Include axiom report for specific declaration
+lal_file_context(file_path="/path/to/file.lean", declaration="my_theorem")
+```
+</details>
+
+<details>
+<summary>Example output</summary>
+
+```json
+{
+  "file": "/path/to/file.lean",
+  "sorry_count": 2,
+  "sorry_locations": [
+    {"line": 15, "column": 3},
+    {"line": 42, "column": 5}
+  ],
+  "custom_deps": ["MyProject.Helper", "MyProject.Types"],
+  "custom_deps_detailed": [
+    {"name": "MyProject.Helper", "line": 3},
+    {"name": "MyProject.Types", "line": 4}
+  ],
+  "axioms": {
+    "declaration": "my_theorem",
+    "axioms": ["propext", "Classical.choice"],
+    "count": 2
+  }
+}
+```
+</details>
 
 ## License & Citation
 
