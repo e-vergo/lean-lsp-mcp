@@ -39,7 +39,7 @@ from lean_lsp_mcp.utils import (
     get_declaration_range,
     OptionalTokenVerifier,
 )
-from lean_lsp_mcp.lal_utils import find_lal_binary, run_lal, run_lal_sorry, run_lal_deps
+from lean_lsp_mcp.lal_utils import find_lal_binary, run_lal, run_lal_sorry, run_lal_deps, run_lal_trivial
 
 
 _LOG_LEVEL = os.environ.get("LEAN_LOG_LEVEL", "INFO")
@@ -1177,6 +1177,57 @@ def lal_custom_deps(
         return json.dumps({"error": f"Path not found: {file_path}"})
 
     result = run_lal_deps(lal_path, file_path, recursive, glob_pattern)
+    return json.dumps(result)
+
+
+@mcp.tool("lal_trivial_report")
+def lal_trivial_report(
+    ctx: Context,
+    file_path: str,
+    recursive: bool = False,
+    glob_pattern: str | None = None
+) -> str:
+    """
+    Report trivial statements (rfl, trivial, by decide, etc.) in Lean files.
+
+    Identifies statements that use trivial proofs like rfl, trivial, by decide,
+    or by simp with no arguments. Useful for finding potentially unnecessary
+    theorems or opportunities for simplification.
+
+    Args:
+        file_path (str): Absolute path to Lean file or directory
+        recursive (bool): Process directories recursively (default: False)
+        glob_pattern (str, optional): Filter files by pattern (e.g., "**/*.lean")
+
+    Returns:
+        str: JSON with trivial statement count and locations, or error message
+    """
+    import json
+
+    lifespan_context = ctx.request_context.lifespan_context
+    project_path = lifespan_context.lean_project_path
+
+    if project_path is None:
+        return json.dumps({
+            "error": "Lean project path not set",
+            "hint": "Call a file-based tool first to set the project path"
+        })
+
+    lal_path = find_lal_binary(project_path)
+    if not lal_path:
+        return json.dumps({
+            "error": "LAL binary not found",
+            "hint": "Set LAL_PATH env var or build LAL: git clone https://github.com/e-vergo/LAL && cd LAL && lake build lal"
+        })
+
+    # Resolve file path
+    if not os.path.isabs(file_path):
+        file_path = str(project_path / file_path)
+
+    if not os.path.exists(file_path):
+        return json.dumps({"error": f"Path not found: {file_path}"})
+
+    result = run_lal_trivial(lal_path, file_path, recursive, glob_pattern)
     return json.dumps(result)
 
 

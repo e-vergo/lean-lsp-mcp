@@ -202,3 +202,54 @@ def run_lal_deps(
         return {"success": False, "error": f"LAL binary not found at {lal_path}"}
     except Exception as e:
         return {"success": False, "error": str(e)}
+
+
+def run_lal_trivial(
+    lal_path: str,
+    file_path: str,
+    recursive: bool = False,
+    glob_pattern: Optional[str] = None,
+    timeout: int = 60
+) -> dict:
+    """
+    Execute LAL trivial command and return results.
+
+    Args:
+        lal_path: Path to LAL binary
+        file_path: Absolute path to Lean file or directory
+        recursive: If True and path is directory, process recursively
+        glob_pattern: Filter files by pattern (e.g., "**/*.lean")
+        timeout: Command timeout in seconds
+
+    Returns:
+        Dictionary with 'success' boolean and either 'output' or 'error'
+    """
+    cmd = [lal_path, "trivial"]
+    if recursive:
+        cmd.append("--recursive")
+    if glob_pattern:
+        cmd.extend(["--glob", glob_pattern])
+    cmd.append(file_path)
+
+    try:
+        result = subprocess.run(
+            cmd,
+            capture_output=True,
+            text=True,
+            timeout=timeout
+        )
+
+        if result.returncode == 0:
+            return {"success": True, "output": result.stdout}
+        else:
+            return {
+                "success": False,
+                "error": result.stderr or f"LAL exited with code {result.returncode}"
+            }
+
+    except subprocess.TimeoutExpired:
+        return {"success": False, "error": f"LAL timed out after {timeout}s"}
+    except FileNotFoundError:
+        return {"success": False, "error": f"LAL binary not found at {lal_path}"}
+    except Exception as e:
+        return {"success": False, "error": str(e)}
