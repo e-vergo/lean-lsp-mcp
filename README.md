@@ -417,6 +417,24 @@ Note: We use a simplified version, [LeanHammer](https://github.com/JOSHCLUNE/Lea
 ```
 </details>
 
+#### lean_axiom_report
+
+Report which axioms a specific declaration depends on using the Lean environment.
+
+Uses the LSP server's access to the elaborated Lean environment to query axiom dependencies via `#print axioms` command. This helps verify whether theorems use classical axioms, propositional extensionality, or other axiom assumptions.
+
+<details>
+<summary>Example output</summary>
+
+```json
+{
+  "declaration": "uses_propext",
+  "axioms": ["propext"],
+  "count": 1
+}
+```
+</details>
+
 ### Project-level tools
 
 #### lean_build

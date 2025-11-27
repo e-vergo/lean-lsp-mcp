@@ -39,7 +39,7 @@ from lean_lsp_mcp.utils import (
     get_declaration_range,
     OptionalTokenVerifier,
 )
-from lean_lsp_mcp.lal_utils import find_lal_binary, run_lal
+from lean_lsp_mcp.lal_utils import find_lal_binary, run_lal, run_lal_sorry, run_lal_deps
 
 
 _LOG_LEVEL = os.environ.get("LEAN_LOG_LEVEL", "INFO")
@@ -1075,6 +1075,348 @@ def lal_fix_diagnostics(
 
     result = run_lal(lal_path, file_path, dry_run, recursive, glob_pattern)
     return json.dumps(result)
+
+
+@mcp.tool("lal_sorry_report")
+def lal_sorry_report(
+    ctx: Context,
+    file_path: str,
+    verbose: bool = False,
+    recursive: bool = False,
+    glob_pattern: str | None = None
+) -> str:
+    """
+    Report sorry occurrences in Lean files.
+
+    Scans Lean files for 'sorry' placeholders and reports their count and locations.
+    Useful for tracking incomplete proofs and implementation stubs.
+
+    Args:
+        file_path (str): Abs path to Lean file or directory
+        verbose (bool): Include declaration and goal fields in output (default: False)
+        recursive (bool): Process directories recursively (default: False)
+        glob_pattern (str, optional): Filter files by pattern (e.g., "**/*.lean")
+
+    Returns:
+        str: JSON with sorry count and locations, or error message
+    """
+    import json
+
+    lifespan_context = ctx.request_context.lifespan_context
+    project_path = lifespan_context.lean_project_path
+
+    if project_path is None:
+        return json.dumps({
+            "error": "Lean project path not set",
+            "hint": "Call a file-based tool first to set the project path"
+        })
+
+    lal_path = find_lal_binary(project_path)
+    if not lal_path:
+        return json.dumps({
+            "error": "LAL binary not found",
+            "hint": "Set LAL_PATH env var or build LAL: git clone https://github.com/e-vergo/LAL && cd LAL && lake build lal"
+        })
+
+    # Resolve file path
+    if not os.path.isabs(file_path):
+        file_path = str(project_path / file_path)
+
+    if not os.path.exists(file_path):
+        return json.dumps({"error": f"Path not found: {file_path}"})
+
+    result = run_lal_sorry(lal_path, file_path, verbose, recursive, glob_pattern)
+    return json.dumps(result)
+
+
+@mcp.tool("lal_custom_deps")
+def lal_custom_deps(
+    ctx: Context,
+    file_path: str,
+    recursive: bool = False,
+    glob_pattern: str | None = None
+) -> str:
+    """
+    Report custom (non-Mathlib) dependencies in Lean files.
+
+    Identifies project-local imports that are not from standard libraries
+    (Mathlib, Batteries, Lean, Init). Useful for understanding what custom
+    definitions a file depends on.
+
+    Args:
+        file_path (str): Absolute path to Lean file or directory
+        recursive (bool): Process directories recursively (default: False)
+        glob_pattern (str, optional): Filter files by pattern (e.g., "**/*.lean")
+
+    Returns:
+        str: JSON with custom dependency names and line numbers, or error message
+    """
+    import json
+
+    lifespan_context = ctx.request_context.lifespan_context
+    project_path = lifespan_context.lean_project_path
+
+    if project_path is None:
+        return json.dumps({
+            "error": "Lean project path not set",
+            "hint": "Call a file-based tool first to set the project path"
+        })
+
+    lal_path = find_lal_binary(project_path)
+    if not lal_path:
+        return json.dumps({
+            "error": "LAL binary not found",
+            "hint": "Set LAL_PATH env var or build LAL: git clone https://github.com/e-vergo/LAL && cd LAL && lake build lal"
+        })
+
+    # Resolve file path
+    if not os.path.isabs(file_path):
+        file_path = str(project_path / file_path)
+
+    if not os.path.exists(file_path):
+        return json.dumps({"error": f"Path not found: {file_path}"})
+
+    result = run_lal_deps(lal_path, file_path, recursive, glob_pattern)
+    return json.dumps(result)
+
+
+@mcp.tool("lean_axiom_report")
+def axiom_report(
+    ctx: Context,
+    file_path: str,
+    declaration_name: str,
+) -> str:
+    """Report axioms used by a specific declaration using LSP environment access.
+
+    Uses the LSP server's access to the Lean elaboration environment to query which
+    axioms a declaration depends on via the #print axioms command.
+
+    Args:
+        file_path (str): Abs path to Lean file containing the declaration
+        declaration_name (str): Name of the theorem/def to check (case-sensitive)
+
+    Returns:
+        str: JSON with axiom list or error message
+    """
+    import json
+    import re
+    import uuid
+
+    rel_path = setup_client_for_file(ctx, file_path)
+    if not rel_path:
+        return json.dumps({
+            "error": "Invalid Lean file path: Unable to start LSP server or load file"
+        })
+
+    client: LeanLSPClient = ctx.request_context.lifespan_context.client
+    lifespan_context = ctx.request_context.lifespan_context
+    lean_project_path = lifespan_context.lean_project_path
+
+    if lean_project_path is None:
+        return json.dumps({
+            "error": "No valid Lean project path found"
+        })
+
+    # Read original file content
+    try:
+        with open(file_path, 'r', encoding='utf-8') as f:
+            original_content = f.read()
+    except Exception as e:
+        return json.dumps({
+            "error": f"Failed to read file: {str(e)}"
+        })
+
+    # Create temp file with #print axioms command
+    temp_content = original_content + f"\n\n#print axioms {declaration_name}\n"
+    temp_filename = f"_axiom_check_{uuid.uuid4().hex}.lean"
+    temp_path = lean_project_path / temp_filename
+
+    try:
+        # Write temp file
+        with open(temp_path, 'w', encoding='utf-8') as f:
+            f.write(temp_content)
+
+        # Open file and get diagnostics
+        client.open_file(temp_filename)
+        diagnostics = client.get_diagnostics(temp_filename, inactivity_timeout=15.0)
+
+        # Look for the axiom info in diagnostics
+        axiom_info = None
+        for diag in diagnostics:
+            msg = diag.get('message', '')
+
+            # Check if this is the #print axioms output
+            if declaration_name in msg and ('depends on axioms' in msg or 'has no axioms' in msg or 'does not depend on any axioms' in msg):
+                # Parse axiom list
+                match = re.search(r"depends on axioms:\s*\[(.*?)\]", msg)
+                if match:
+                    axiom_str = match.group(1).strip()
+                    if axiom_str:
+                        axiom_info = {
+                            "declaration": declaration_name,
+                            "axioms": [ax.strip() for ax in axiom_str.split(',')],
+                            "count": len([ax.strip() for ax in axiom_str.split(',')])
+                        }
+                    else:
+                        axiom_info = {
+                            "declaration": declaration_name,
+                            "axioms": [],
+                            "count": 0
+                        }
+                elif 'has no axioms' in msg or 'does not depend on any axioms' in msg:
+                    axiom_info = {
+                        "declaration": declaration_name,
+                        "axioms": [],
+                        "count": 0
+                    }
+                break
+
+        # Clean up
+        client.close_files([temp_filename])
+
+        if axiom_info is None:
+            # Check if there were errors indicating declaration not found
+            error_msgs = [d.get('message', '') for d in diagnostics if d.get('severity') == 1]
+            if any('unknown' in msg.lower() or 'not found' in msg.lower() for msg in error_msgs):
+                return json.dumps({
+                    "error": f"Declaration '{declaration_name}' not found",
+                    "hint": "Check the declaration name (case-sensitive)"
+                })
+
+            return json.dumps({
+                "error": "Failed to extract axiom information",
+                "diagnostics": [{"severity": d.get('severity'), "message": d.get('message')} for d in diagnostics]
+            })
+
+        return json.dumps(axiom_info)
+
+    except Exception as e:
+        return json.dumps({
+            "error": f"Error during axiom check: {str(e)}"
+        })
+    finally:
+        # Always clean up temp file
+        try:
+            if temp_path.exists():
+                temp_path.unlink()
+        except Exception:
+            pass
+
+
+@mcp.tool("lal_file_context")
+def lal_file_context(
+    ctx: Context,
+    file_path: str,
+    verbose: bool = False,
+    declaration: Optional[str] = None
+) -> str:
+    """
+    Get combined file context: sorry count/locations, custom dependencies, and optional axiom info.
+
+    Aggregates information from multiple LAL tools into a single response for quick file analysis.
+    Useful for understanding a file's state before making changes.
+
+    Output format:
+    {
+      "file": "/path/to/file.lean",
+      "sorry_count": 2,
+      "sorry_locations": [{"line": 10, "column": 3}, ...],
+      "custom_deps": ["MyModule.Helper", "MyModule.Types"],
+      "custom_deps_detailed": [{"name": "MyModule.Helper", "line": 5}, ...],
+      "axioms": {...}  // Only if declaration parameter provided
+    }
+
+    Args:
+        file_path (str): Absolute path to Lean file
+        verbose (bool): Include full sorry details if available (default: False)
+        declaration (str, optional): If provided, also include axiom information for this declaration
+
+    Returns:
+        str: JSON with sorry info, custom deps, and optional axiom info
+    """
+    import json
+
+    lifespan_context = ctx.request_context.lifespan_context
+    project_path = lifespan_context.lean_project_path
+
+    if project_path is None:
+        return json.dumps({
+            "error": "Lean project path not set",
+            "hint": "Call a file-based tool first to set the project path"
+        })
+
+    lal_path = find_lal_binary(project_path)
+    if not lal_path:
+        return json.dumps({
+            "error": "LAL binary not found",
+            "hint": "Set LAL_PATH env var or build LAL: git clone https://github.com/e-vergo/LAL && cd LAL && lake build lal"
+        })
+
+    # Resolve file path
+    if not os.path.isabs(file_path):
+        file_path = str(project_path / file_path)
+
+    if not os.path.exists(file_path):
+        return json.dumps({"error": f"Path not found: {file_path}"})
+
+    # Get sorry information
+    sorry_result = run_lal_sorry(lal_path, file_path, verbose=verbose, recursive=False)
+
+    # Get custom dependencies
+    deps_result = run_lal_deps(lal_path, file_path, recursive=False)
+
+    # Build response
+    response = {
+        "file": file_path
+    }
+
+    # Process sorry results
+    if sorry_result.get("success"):
+        try:
+            sorry_data = json.loads(sorry_result["output"])
+            # LAL returns a single object for single file
+            response["sorry_count"] = sorry_data.get("sorry_count", 0)
+
+            # Extract locations
+            locations = sorry_data.get("locations", [])
+            if verbose:
+                # Include full location data if available
+                response["sorry_locations"] = locations
+            else:
+                # Just line/column
+                response["sorry_locations"] = [
+                    {"line": loc["line"], "column": loc["column"]}
+                    for loc in locations
+                ]
+        except (json.JSONDecodeError, KeyError) as e:
+            response["sorry_error"] = f"Failed to parse sorry output: {str(e)}"
+    else:
+        response["sorry_error"] = sorry_result.get("error", "Unknown error")
+
+    # Process deps results
+    if deps_result.get("success"):
+        try:
+            deps_data = json.loads(deps_result["output"])
+            # LAL returns a single object for single file
+            # Extract custom dependencies (with line numbers)
+            custom_dependencies = deps_data.get("custom_dependencies", [])
+            response["custom_deps"] = [dep["name"] for dep in custom_dependencies]
+            response["custom_deps_detailed"] = custom_dependencies
+        except (json.JSONDecodeError, KeyError) as e:
+            response["deps_error"] = f"Failed to parse deps output: {str(e)}"
+    else:
+        response["deps_error"] = deps_result.get("error", "Unknown error")
+
+    # Get axiom info if declaration provided
+    if declaration:
+        axiom_json = axiom_report(ctx, file_path, declaration)
+        try:
+            axiom_data = json.loads(axiom_json)
+            response["axioms"] = axiom_data
+        except json.JSONDecodeError:
+            response["axioms"] = {"error": "Failed to parse axiom report"}
+
+    return json.dumps(response, indent=2)
 
 
 if __name__ == "__main__":

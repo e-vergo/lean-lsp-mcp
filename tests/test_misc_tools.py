@@ -21,6 +21,10 @@ def misc_file(test_project_path: Path) -> Path:
             def miscValue : Nat := 0
 
             def multiAttemptTarget : Nat := 0
+
+            -- Test axiom reporting
+            theorem uses_propext (p q : Prop) (h : p ↔ q) : p = q := propext h
+            theorem no_axioms : ∃ n : Nat, n > 0 := ⟨1, by norm_num⟩
             """
         ).strip()
         + "\n",
@@ -78,3 +82,26 @@ async def test_misc_tools(
         )
         run_text = result_text(run)
         assert "No diagnostics" in run_text or "severity" in run_text
+
+        # Test axiom reporting
+        axiom_test = await client.call_tool(
+            "lean_axiom_report",
+            {
+                "file_path": str(misc_file),
+                "declaration_name": "uses_propext",
+            },
+        )
+        axiom_result = result_text(axiom_test)
+        assert "propext" in axiom_result
+        assert '"declaration": "uses_propext"' in axiom_result
+
+        # Test theorem with no axioms (might report sorryAx in some cases)
+        no_axiom_test = await client.call_tool(
+            "lean_axiom_report",
+            {
+                "file_path": str(misc_file),
+                "declaration_name": "no_axioms",
+            },
+        )
+        no_axiom_result = result_text(no_axiom_test)
+        assert '"declaration": "no_axioms"' in no_axiom_result
