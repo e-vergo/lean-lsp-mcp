@@ -1,65 +1,45 @@
 <h1 align="center">
-  lean-lsp-mcp
+  Lean LSP MCP
 </h1>
 
-<h3 align="center">Lean Theorem Prover MCP</h3>
+<h3 align="center">Model Context Protocol Server for Lean 4 Theorem Proving</h3>
 
 <p align="center">
   <a href="https://pypi.org/project/lean-lsp-mcp/">
     <img src="https://img.shields.io/pypi/v/lean-lsp-mcp.svg" alt="PyPI version" />
   </a>
-  <a href="">
-    <img src="https://img.shields.io/github/last-commit/oOo0oOo/lean-lsp-mcp" alt="last update" />
-  </a>
-  <a href="https://github.com/oOo0oOo/lean-lsp-mcp/blob/master/LICENSE">
-    <img src="https://img.shields.io/github/license/oOo0oOo/lean-lsp-mcp.svg" alt="license" />
+  <a href="https://github.com/e-vergo/lean-lsp-mcp/blob/master/LICENSE">
+    <img src="https://img.shields.io/github/license/e-vergo/lean-lsp-mcp.svg" alt="license" />
   </a>
 </p>
 
-MCP server that allows agentic interaction with the [Lean theorem prover](https://lean-lang.org/) via the [Language Server Protocol](https://microsoft.github.io/language-server-protocol/specifications/lsp/3.17/specification/) using [leanclient](https://github.com/oOo0oOo/leanclient). This server provides a range of tools for LLM agents to understand, analyze and interact with Lean projects.
+An MCP server for agentic interaction with the [Lean theorem prover](https://lean-lang.org/) via the [Language Server Protocol](https://microsoft.github.io/language-server-protocol/specifications/lsp/3.17/specification/). This server provides comprehensive tools for LLM agents to understand, analyze, lint, and interact with Lean 4 projects.
 
-## Key Features
+## Features
 
-* **Rich Lean Interaction**: Access diagnostics, goal states, term information, hover documentation and more.
-* **External Search Tools**: Use `LeanSearch`, `Loogle`, `Lean Finder`, `Lean Hammer` and `Lean State Search` to find relevant theorems and definitions.
-* **Easy Setup**: Simple configuration for various clients, including VSCode, Cursor and Claude Code.
+* **Rich Lean Interaction**: Access diagnostics, goal states, term information, hover documentation, and code completions.
+* **External Search Tools**: Integrated with LeanSearch, Loogle, Lean Finder, Lean Hammer, and State Search.
+* **Auto-Linting (LAL)**: Automated code fixes for style violations, sorry reporting, dependency analysis, and axiom tracking.
+* **Local Search**: Fast declaration lookup using ripgrep to prevent API hallucination.
 
-## Setup
+## Quick Start
 
-### Overview
+### Prerequisites
 
-1. Install [uv](https://docs.astral.sh/uv/getting-started/installation/), a Python package manager.
-2. Make sure your Lean project builds quickly by running `lake build` manually.
-3. Configure your IDE/Setup
-4. (Optional, highly recommended) Install [ripgrep](https://github.com/BurntSushi/ripgrep?tab=readme-ov-file#installation) (`rg`) to reduce hallucinations using local search.
+1. Install [uv](https://docs.astral.sh/uv/getting-started/installation/) (Python package manager)
+2. Run `lake build` in your Lean project (ensures fast startup)
+3. (Recommended) Install [ripgrep](https://github.com/BurntSushi/ripgrep) for local search
 
-### 1. Install uv
-
-[Install uv](https://docs.astral.sh/uv/getting-started/installation/) for your system. On Linux/MacOS: `curl -LsSf https://astral.sh/uv/install.sh | sh`
-
-### 2. Run `lake build`
-
-`lean-lsp-mcp` will run `lake serve` in the project root to use the language server (for most tools). Some clients (e.g. Cursor) might timeout during this process. Therefore, it is recommended to run `lake build` manually before starting the MCP. This ensures a faster build time and avoids timeouts.
-
-### 3. Configure your IDE/Setup
+### Installation
 
 <details>
-<summary><b>VSCode (Click to expand)</b></summary>
-One-click config setup:
+<summary><b>VSCode</b></summary>
+
+One-click install:
 
 [![Install in VS Code](https://img.shields.io/badge/VS_Code-Install_Server-0098FF?style=flat-square&logo=visualstudiocode&logoColor=white)](https://insiders.vscode.dev/redirect/mcp/install?name=lean-lsp&config=%7B%22command%22%3A%22uvx%22%2C%22args%22%3A%5B%22lean-lsp-mcp%22%5D%7D)
 
-[![Install in VS Code Insiders](https://img.shields.io/badge/VS_Code_Insiders-Install_Server-24bfa5?style=flat-square&logo=visualstudiocode&logoColor=white)](https://insiders.vscode.dev/redirect/mcp/install?name=lean-lsp&config=%7B%22command%22%3A%22uvx%22%2C%22args%22%3A%5B%22lean-lsp-mcp%22%5D%7D&quality=insiders)
-
-OR using the setup wizard:
-
-Ctrl+Shift+P > "MCP: Add Server..." > "Command (stdio)" > "uvx lean-lsp-mcp" > "lean-lsp" (or any name you like) > Global or Workspace
-
-OR manually adding config by opening `mcp.json` with: 
-
-Ctrl+Shift+P > "MCP: Open User Configuration"
-
-and adding the following
+Or manually add to `mcp.json` (Ctrl+Shift+P > "MCP: Open User Configuration"):
 
 ```jsonc
 {
@@ -67,41 +47,17 @@ and adding the following
         "lean-lsp": {
             "type": "stdio",
             "command": "uvx",
-            "args": [
-                "lean-lsp-mcp"
-            ]
+            "args": ["lean-lsp-mcp"]
         }
     }
 }
 ```
-
-If you installed VSCode on Windows and are using WSL2 as your development environment, you may need to use this config instead:
-
-```jsonc
-{
-    "servers": {
-        "lean-lsp": {
-            "type": "stdio",
-            "command": "wsl.exe",
-            "args": [
-                "uvx",
-                "lean-lsp-mcp"
-            ]
-        }
-    }
-}
-```
-If that doesn't work, you can try cloning this repository and replace `"lean-lsp-mcp"` with `"/path/to/cloned/lean-lsp-mcp"`.
-
 </details>
 
 <details>
-<summary><b>Cursor (Click to expand)</b></summary>
-1. Open MCP Settings (File > Preferences > Cursor Settings > MCP)
+<summary><b>Cursor</b></summary>
 
-2. "+ Add a new global MCP Server" > ("Create File")
-
-3. Paste the server config into `mcp.json` file:
+File > Preferences > Cursor Settings > MCP > "+ Add new global MCP Server":
 
 ```jsonc
 {
@@ -116,45 +72,60 @@ If that doesn't work, you can try cloning this repository and replace `"lean-lsp
 </details>
 
 <details>
-<summary><b>Claude Code (Click to expand)</b></summary>
-Run one of these commands in the root directory of your Lean project (where `lakefile.toml` is located):
+<summary><b>Claude Code</b></summary>
 
 ```bash
-# Local-scoped MCP server
+# Local scope
 claude mcp add lean-lsp uvx lean-lsp-mcp
 
-# OR project-scoped MCP server
-# (creates or updates a .mcp.json file in the current directory)
+# Project scope (creates .mcp.json)
 claude mcp add lean-lsp -s project uvx lean-lsp-mcp
 ```
-
-You can find more details about MCP server configuration for Claude Code [here](https://docs.anthropic.com/en/docs/agents-and-tools/claude-code/tutorials#configure-mcp-servers).
 </details>
 
-#### Claude Skill: Lean4 Theorem Proving
+---
 
-If you are using [Claude Desktop](https://modelcontextprotocol.io/quickstart/user) or [Claude Code](https://claude.ai/code), you can also install the [Lean4 Theorem Proving Skill](https://github.com/cameronfreer/lean4-skills/tree/main/plugins/lean4-theorem-proving). This skill provides additional prompts and templates for interacting with Lean4 projects and includes a section on interacting with the `lean-lsp-mcp` server.
+## Tool Reference
 
-### 4. Install ripgrep (optional but recommended)
+### LSP File Tools
 
-For the local search tool `lean_local_search`, install [ripgrep](https://github.com/BurntSushi/ripgrep?tab=readme-ov-file#installation) (`rg`) and make sure it is available in your PATH.
+#### `lean_file_outline`
 
-## MCP Tools
+Get a concise outline showing imports and declarations with type signatures.
 
+| Parameter | Type | Required | Description |
+|-----------|------|----------|-------------|
+| `file_path` | string | Yes | Absolute path to Lean file |
 
-### File interactions (LSP)
+**Returns**: Markdown-formatted outline with imports, theorems, definitions, classes, and structures.
 
-#### lean_file_outline
+---
 
-Get a concise outline of a Lean file showing imports and declarations with type signatures (theorems, definitions, classes, structures).
+#### `lean_file_contents`
 
-#### lean_file_contents (DEPRECATED)
+> **DEPRECATED**: Will be removed. Use the Read tool or `lean_file_outline` instead.
 
-Get the contents of a Lean file, optionally with line number annotations.
+Get the text contents of a Lean file with optional line numbers.
 
-#### lean_diagnostic_messages
+| Parameter | Type | Required | Default | Description |
+|-----------|------|----------|---------|-------------|
+| `file_path` | string | Yes | - | Absolute path to Lean file |
+| `annotate_lines` | boolean | No | `true` | Annotate lines with line numbers |
 
-Get all diagnostic messages for a Lean file. This includes infos, warnings and errors.
+---
+
+#### `lean_diagnostic_messages`
+
+Get all diagnostic messages (errors, warnings, infos) for a Lean file.
+
+| Parameter | Type | Required | Default | Description |
+|-----------|------|----------|---------|-------------|
+| `file_path` | string | Yes | - | Absolute path to Lean file |
+| `start_line` | integer | No | - | Filter from this line (1-indexed) |
+| `end_line` | integer | No | - | Filter to this line (1-indexed) |
+| `declaration_name` | string | No | - | Filter to specific declaration (overrides line filters) |
+
+**Returns**: List of diagnostics with location, severity, and message.
 
 <details>
 <summary>Example output</summary>
@@ -168,463 +139,332 @@ function expected at
   h_empty
 term has type
   T ∩ compl T = ∅
-
-...
 ```
 </details>
 
-#### lean_goal
+---
 
-Get the proof goal at a specific location (line or line & column) in a Lean file.
+#### `lean_goal`
+
+Get the proof goals (tactic state) at a specific location.
+
+| Parameter | Type | Required | Default | Description |
+|-----------|------|----------|---------|-------------|
+| `file_path` | string | Yes | - | Absolute path to Lean file |
+| `line` | integer | Yes | - | Line number (1-indexed) |
+| `column` | integer | No | - | Column number (1-indexed). If omitted, shows before and after |
+
+**Returns**: Goal state or "no goals" if solved. To see goals at `sorry`, position cursor before the "s".
 
 <details>
-<summary>Example output (line)</summary>
+<summary>Example output</summary>
 
 ```
 Before:
 S : Type u_1
-inst✝¹ : Fintype S
-inst✝ : Nonempty S
+inst : Fintype S
 P : Finset (Set S)
 hPP : ∀ T ∈ P, ∀ U ∈ P, T ∩ U ≠ ∅
-hPS : ¬∃ T ∉ P, ∀ U ∈ P, T ∩ U ≠ ∅
-compl : Set S → Set S := fun T ↦ univ \ T
-hcompl : ∀ T ∈ P, compl T ∉ P
-all_subsets : Finset (Set S) := Finset.univ
-h_comp_in_P : ∀ T ∉ P, compl T ∈ P
-h_partition : ∀ (T : Set S), T ∈ P ∨ compl T ∈ P
 ⊢ P.card = 2 ^ (Fintype.card S - 1)
+
 After:
 no goals
 ```
 </details>
 
-#### lean_term_goal
+---
 
-Get the term goal at a specific position (line & column) in a Lean file.
+#### `lean_term_goal`
 
-#### lean_hover_info
+Get the expected type (term goal) at a specific position.
 
-Retrieve hover information (documentation) for symbols, terms, and expressions in a Lean file (at a specific line & column).
+| Parameter | Type | Required | Default | Description |
+|-----------|------|----------|---------|-------------|
+| `file_path` | string | Yes | - | Absolute path to Lean file |
+| `line` | integer | Yes | - | Line number (1-indexed) |
+| `column` | integer | No | - | Column number (1-indexed). Defaults to end of line |
+
+---
+
+#### `lean_hover_info`
+
+Get hover documentation for syntax, variables, functions, etc.
+
+| Parameter | Type | Required | Description |
+|-----------|------|----------|-------------|
+| `file_path` | string | Yes | Absolute path to Lean file |
+| `line` | integer | Yes | Line number (1-indexed) |
+| `column` | integer | Yes | Column number (1-indexed). Use start of term |
 
 <details>
-<summary>Example output (hover info on a `sorry`)</summary>
+<summary>Example output (hovering on `sorry`)</summary>
 
 ```
 The `sorry` tactic is a temporary placeholder for an incomplete tactic proof,
 closing the main goal using `exact sorry`.
 
-This is intended for stubbing-out incomplete parts of a proof while still having a syntactically correct proof skeleton.
-Lean will give a warning whenever a proof uses `sorry`, so you aren't likely to miss it,
-but you can double check if a theorem depends on `sorry` by looking for `sorryAx` in the output
-of the `#print axioms my_thm` command, the axiom used by the implementation of `sorry`.
+This is intended for stubbing-out incomplete parts of a proof while still
+having a syntactically correct proof skeleton. Lean will give a warning
+whenever a proof uses `sorry`.
 ```
 </details>
 
-#### lean_declaration_file
+---
 
-Get the file contents where a symbol or term is declared.
+#### `lean_declaration_file`
 
-#### lean_completions
+Get the file contents where a symbol is declared.
 
-Code auto-completion: Find available identifiers or import suggestions at a specific position (line & column) in a Lean file.
+| Parameter | Type | Required | Description |
+|-----------|------|----------|-------------|
+| `file_path` | string | Yes | Absolute path to Lean file containing the symbol reference |
+| `symbol` | string | Yes | Symbol name to look up (case-sensitive) |
 
-#### lean_run_code
+**Note**: The symbol must be present/imported in the file. Use `lean_hover_info` first to verify.
 
-Run/compile an independent Lean code snippet/file and return the result or error message.
+---
+
+#### `lean_completions`
+
+Get code completions at a location (for incomplete statements only).
+
+| Parameter | Type | Required | Default | Description |
+|-----------|------|----------|---------|-------------|
+| `file_path` | string | Yes | - | Absolute path to Lean file |
+| `line` | integer | Yes | - | Line number (1-indexed) |
+| `column` | integer | Yes | - | Column number (1-indexed) |
+| `max_completions` | integer | No | 32 | Maximum completions to return |
+
+**Use cases**:
+- **Dot completion**: After `Nat.` or `x.`
+- **Identifier completion**: After partial name like `Nat.ad`
+- **Import completion**: After `import` at file start
+
+---
+
+#### `lean_run_code`
+
+Run a complete, self-contained Lean code snippet.
+
+| Parameter | Type | Required | Description |
+|-----------|------|----------|-------------|
+| `code` | string | Yes | Complete Lean code (must include all imports) |
+
+**Returns**: Diagnostics from compilation.
+
 <details>
-<summary>Example output (code snippet: `#eval 5 * 7 + 3`)</summary>
+<summary>Example</summary>
 
+Input: `#eval 5 * 7 + 3`
+
+Output:
 ```
 l1c1-l1c6, severity: 3
 38
 ```
 </details>
 
-#### lean_multi_attempt
+---
 
-Attempt multiple lean code snippets on a line and return goal state and diagnostics for each snippet.
-This tool is useful to screen different proof attempts before using the most promising one.
+#### `lean_multi_attempt`
+
+Try multiple code snippets at a line and compare results.
+
+| Parameter | Type | Required | Description |
+|-----------|------|----------|-------------|
+| `file_path` | string | Yes | Absolute path to Lean file |
+| `line` | integer | Yes | Line number (1-indexed) |
+| `snippets` | array[string] | Yes | List of snippets to try (3+ recommended) |
+
+**Note**: Single-line, fully-indented snippets only. Avoid comments.
 
 <details>
-<summary>Example output (attempting `rw [Nat.pow_sub (Fintype.card_pos_of_nonempty S)]` and `by_contra h_neq`)</summary>
+<summary>Example output</summary>
 
 ```
-  rw [Nat.pow_sub (Fintype.card_pos_of_nonempty S)]:
-S : Type u_1
-inst✝¹ : Fintype S
-inst✝ : Nonempty S
-P : Finset (Set S)
-hPP : ∀ T ∈ P, ∀ U ∈ P, T ∩ U ≠ ∅
-hPS : ¬∃ T ∉ P, ∀ U ∈ P, T ∩ U ≠ ∅
+  rw [Nat.pow_sub (Fintype.card_pos)]:
 ⊢ P.card = 2 ^ (Fintype.card S - 1)
-
 l14c7-l14c51, severity: 1
 unknown constant 'Nat.pow_sub'
 
   by_contra h_neq:
- S : Type u_1
-inst✝¹ : Fintype S
-inst✝ : Nonempty S
-P : Finset (Set S)
-hPP : ∀ T ∈ P, ∀ U ∈ P, T ∩ U ≠ ∅
-hPS : ¬∃ T ∉ P, ∀ U ∈ P, T ∩ U ≠ ∅
 h_neq : ¬P.card = 2 ^ (Fintype.card S - 1)
 ⊢ False
-
-...
 ```
 </details>
 
-### Local Search Tools
+---
 
-#### lean_local_search
+### Local Search
 
-Search for Lean definitions and theorems in the local Lean project and stdlib.
-This is useful to confirm declarations actually exist and prevent hallucinating APIs.
+#### `lean_local_search`
 
-This tool requires [ripgrep](https://github.com/BurntSushi/ripgrep?tab=readme-ov-file#installation) (`rg`) to be installed and available in your PATH.
+Search for declarations in the workspace to prevent hallucinating APIs.
+
+| Parameter | Type | Required | Default | Description |
+|-----------|------|----------|---------|-------------|
+| `query` | string | Yes | - | Declaration name or prefix |
+| `limit` | integer | No | 10 | Maximum matches to return |
+| `project_root` | string | No | - | Project root path |
+
+**Returns**: List of `{name, kind, file}` objects.
+
+**Requires**: [ripgrep](https://github.com/BurntSushi/ripgrep) installed.
+
+---
 
 ### External Search Tools
 
-Currently most external tools are separately **rate limited to 3 requests per 30 seconds**. Please don't ruin the fun for everyone by overusing these amazing free services!
+> **Rate Limit**: Most external tools are limited to 3 requests per 30 seconds.
 
-Please cite the original authors of these tools if you use them!
+#### `lean_leansearch`
 
-#### lean_leansearch
+Search Mathlib using natural language via [leansearch.net](https://leansearch.net).
 
-Search for theorems in Mathlib using [leansearch.net](https://leansearch.net) (natural language search).
+| Parameter | Type | Required | Default | Description |
+|-----------|------|----------|---------|-------------|
+| `query` | string | Yes | - | Search query (see patterns below) |
+| `num_results` | integer | No | 5 | Maximum results |
 
-[Github Repository](https://github.com/frenzymath/LeanSearch) | [Arxiv Paper](https://arxiv.org/abs/2403.13310)
+**Query patterns**:
+- Natural language: `"If there exist injective maps from A to B and B to A, then there exists a bijective map"`
+- Mixed: `"n + 1 <= m if n < m"`
+- Concept: `"Cauchy Schwarz"`
+- Identifier: `"List.sum"`, `"Finset induction"`
+- Lean term: `"{f : A → B} (hf : Injective f) : ∃ h, Bijective h"`
 
-- Supports natural language, mixed queries, concepts, identifiers, and Lean terms.
-- Example: `bijective map from injective`, `n + 1 <= m if n < m`, `Cauchy Schwarz`, `List.sum`, `{f : A → B} (hf : Injective f) : ∃ h, Bijective h`
+**Citation**: [arXiv:2403.13310](https://arxiv.org/abs/2403.13310)
 
-<details>
-<summary>Example output (query by LLM: `bijective map from injective`)</summary>
+---
 
-```json
-  {
-    "module_name": "Mathlib.Logic.Function.Basic",
-    "kind": "theorem",
-    "name": "Function.Bijective.injective",
-    "signature": " {f : α → β} (hf : Bijective f) : Injective f",
-    "type": "∀ {α : Sort u_1} {β : Sort u_2} {f : α → β}, Function.Bijective f → Function.Injective f",
-    "value": ":= hf.1",
-    "informal_name": "Bijectivity Implies Injectivity",
-    "informal_description": "For any function $f \\colon \\alpha \\to \\beta$, if $f$ is bijective, then $f$ is injective."
-  },
-  ...
-```
-</details>
+#### `lean_loogle`
 
-#### lean_loogle
+Search by type signature via [loogle.lean-lang.org](https://loogle.lean-lang.org/).
 
-Search for Lean definitions and theorems using [loogle.lean-lang.org](https://loogle.lean-lang.org/).
+| Parameter | Type | Required | Default | Description |
+|-----------|------|----------|---------|-------------|
+| `query` | string | Yes | - | Search query (see patterns below) |
+| `num_results` | integer | No | 8 | Maximum results |
 
-[Github Repository](https://github.com/nomeata/loogle)
+**Query patterns**:
+- By constant: `Real.sin`
+- By name substring: `"differ"`
+- By subexpression: `_ * (_ ^ _)`
+- Non-linear: `Real.sqrt ?a * Real.sqrt ?a`
+- By type: `(?a -> ?b) -> List ?a -> List ?b`
+- By conclusion: `|- tsum _ = _ * tsum _`
 
-- Supports queries by constant, lemma name, subexpression, type, or conclusion.
-- Example: `Real.sin`, `"differ"`, `_ * (_ ^ _)`, `(?a -> ?b) -> List ?a -> List ?b`, `|- tsum _ = _ * tsum _`
+**Repository**: [github.com/nomeata/loogle](https://github.com/nomeata/loogle)
 
-<details>
-<summary>Example output (`Real.sin`)</summary>
+---
 
-```json
-[
-  {
-    "type": " (x : ℝ) : ℝ",
-    "name": "Real.sin",
-    "module": "Mathlib.Data.Complex.Trigonometric"
-  },
-  ...
-]
-```
-</details>
+#### `lean_leanfinder`
 
-#### lean_leanfinder
+Semantic search via [Lean Finder](https://huggingface.co/spaces/delta-lab-ai/Lean-Finder).
 
-Semantic search for Mathlib theorems using [Lean Finder](https://huggingface.co/spaces/delta-lab-ai/Lean-Finder).
+| Parameter | Type | Required | Default | Description |
+|-----------|------|----------|---------|-------------|
+| `query` | string | Yes | - | Mathematical concept, proof state, or statement |
+| `num_results` | integer | No | 5 | Maximum results |
 
-[Arxiv Paper](https://arxiv.org/abs/2510.15940)
+**Effective queries**:
+- Natural language statement: `"For any n,m, n+m = m+n"`
+- Question: `"Does y being a root of minpoly(x) imply minpoly(x)=minpoly(y)?"`
+- Proof state + transformation goal
+- Statement fragment
 
-- Supports informal descriptions, user questions, proof states, and statement fragments.
-- Examples: `algebraic elements x,y over K with same minimal polynomial`, `Does y being a root of minpoly(x) imply minpoly(x)=minpoly(y)?`, `⊢ |re z| ≤ ‖z‖` + `transform to squared norm inequality`, `theorem restrict Ioi: restrict Ioi e = restrict Ici e`
+**Citation**: [arXiv:2510.15940](https://arxiv.org/abs/2510.15940)
 
-<details>
-<summary>Example output</summary>
+---
 
-Query: `Does y being a root of minpoly(x) imply minpoly(x)=minpoly(y)?`
+#### `lean_state_search`
 
-```json
-  [
-    [
-      "/-- If `y : L` is a root of `minpoly K x`, then `minpoly K y = minpoly K x`. -/\ntheorem eq_of_root {x y : L} (hx : IsAlgebraic K x)\n    (h_ev : Polynomial.aeval y (minpoly K x) = 0) : minpoly K y = minpoly K x :=\n  ((eq_iff_aeval_minpoly_eq_zero hx.isIntegral).mpr h_ev).symm",
-      
-      "Let $L/K$ be a field extension, and let $x, y \\in L$ be elements such that $y$ is a root of the minimal polynomial of $x$ over $K$. If $x$ is algebraic over $K$, then the minimal polynomial of $y$ over $K$ is equal to the minimal polynomial of $x$ over $K$, i.e., $\\text{minpoly}_K(y) = \\text{minpoly}_K(x)$. This means that if $y$ satisfies the polynomial equation defined by $x$, then $y$ shares the same minimal polynomial as $x$."
-    ],
-    ...
-  ]
-```
-</details>
+Search for applicable theorems based on proof state via [premise-search.com](https://premise-search.com/).
 
-#### lean_state_search
+| Parameter | Type | Required | Default | Description |
+|-----------|------|----------|---------|-------------|
+| `file_path` | string | Yes | - | Absolute path to Lean file |
+| `line` | integer | Yes | - | Line number (1-indexed) |
+| `column` | integer | Yes | - | Column number (1-indexed) |
+| `num_results` | integer | No | 5 | Maximum results |
 
-Search for applicable theorems for the current proof goal using [premise-search.com](https://premise-search.com/).
+**Returns**: List of `{name, formal_type, module}` for relevant theorems.
 
-[Github Repository](https://github.com/ruc-ai4math/Premise-Retrieval) | [Arxiv Paper](https://arxiv.org/abs/2501.13959)
+**Self-hosting**: Set `LEAN_STATE_SEARCH_URL` environment variable.
 
-A self-hosted version is [available](https://github.com/ruc-ai4math/LeanStateSearch) and encouraged. You can set an environment variable `LEAN_STATE_SEARCH_URL` to point to your self-hosted instance. It defaults to `https://premise-search.com`.
+**Citation**: [arXiv:2501.13959](https://arxiv.org/abs/2501.13959)
 
-Uses the first goal at a given line and column.
-Returns a list of relevant theorems.
-<details> <summary>Example output (line 24, column 3)</summary>
+---
 
-```json
-[
-  {
-    "name": "Nat.mul_zero",
-    "formal_type": "∀ (n : Nat), n * 0 = 0",
-    "module": "Init.Data.Nat.Basic"
-  },
-  ...
-]
-```
-</details>
+#### `lean_hammer_premise`
 
+Search for premises using [Lean Hammer](https://github.com/hanwenzhu/lean-premise-server).
 
-#### lean_hammer_premise
+| Parameter | Type | Required | Default | Description |
+|-----------|------|----------|---------|-------------|
+| `file_path` | string | Yes | - | Absolute path to Lean file |
+| `line` | integer | Yes | - | Line number (1-indexed) |
+| `column` | integer | Yes | - | Column number (1-indexed) |
+| `num_results` | integer | No | 32 | Maximum results |
 
-Search for relevant premises based on the current proof state using the [Lean Hammer Premise Search](https://github.com/hanwenzhu/lean-premise-server).
+**Returns**: List of premise names.
 
-[Github Repository](https://github.com/hanwenzhu/lean-premise-server) | [Arxiv Paper](https://arxiv.org/abs/2506.07477)
+**Self-hosting**: Set `LEAN_HAMMER_URL` environment variable.
 
-A self-hosted version is [available](https://github.com/hanwenzhu/lean-premise-server) and encouraged. You can set an environment variable `LEAN_HAMMER_URL` to point to your self-hosted instance. It defaults to `http://leanpremise.net`.
+**Citation**: [arXiv:2506.07477](https://arxiv.org/abs/2506.07477)
 
-Uses the first goal at a given line and column.
-Returns a list of relevant premises (theorems) that can be used to prove the goal.
+---
 
-Note: We use a simplified version, [LeanHammer](https://github.com/JOSHCLUNE/LeanHammer) might have better premise search results.
-<details><summary>Example output (line 24, column 3)</summary>
+### LAL Tools (Auto-Linting)
 
-```json
-[
-  "MulOpposite.unop_injective",
-  "MulOpposite.op_injective",
-  "WellFoundedLT.induction",
-  ...
-]
-```
-</details>
+#### `lal_fix_diagnostics`
 
-#### lean_axiom_report
+Auto-fix mechanical linter warnings.
 
-Report which axioms a specific declaration depends on using the Lean environment.
+| Parameter | Type | Required | Default | Description |
+|-----------|------|----------|---------|-------------|
+| `file_path` | string | Yes | - | Absolute path to file or directory |
+| `dry_run` | boolean | No | `true` | Show fixes without applying |
+| `recursive` | boolean | No | `false` | Process directories recursively |
+| `glob_pattern` | string | No | - | Filter files (e.g., `"**/*.lean"`) |
 
-Uses the LSP server's access to the elaborated Lean environment to query axiom dependencies via `#print axioms` command. This helps verify whether theorems use classical axioms, propositional extensionality, or other axiom assumptions.
+**Supported fixes**:
+
+| Violation | Fix |
+|-----------|-----|
+| Unused variables | `x` → `_x` |
+| Wrong cdot | `.` → `·` |
+| Lambda syntax | `λ` → `fun` |
+| Dollar syntax | `$` → `<\|` |
+| "Try this:" suggestions | Auto-apply |
+| Unused simp args | Remove |
+| Trailing whitespace | Remove |
+| Windows line endings | Convert to Unix |
+| Semicolon spacing | Fix |
 
 <details>
 <summary>Example output</summary>
 
 ```json
-{
-  "declaration": "uses_propext",
-  "axioms": ["propext"],
-  "count": 1
-}
+[
+  {"file": "/path/file.lean", "line": 10, "column": 5, "replacement": "fun", "description": "Replace λ with fun keyword"},
+  {"file": "/path/file.lean", "line": 15, "column": 8, "replacement": "_x", "description": "Prefix unused variable `x` with underscore"}
+]
 ```
 </details>
 
-### Project-level tools
+---
 
-#### lean_build
-
-Rebuild the Lean project and restart the Lean LSP server.
-
-### Disabling Tools
-
-Many clients allow the user to disable specific tools manually (e.g. lean_build).
-
-**VSCode**: Click on the Wrench/Screwdriver icon in the chat.
-
-**Cursor**: In "Cursor Settings" > "MCP" click on the name of a tool to disable it (strikethrough).
-
-## MCP Configuration
-
-This MCP server works out-of-the-box without any configuration. However, a few optional settings are available.
-
-### Environment Variables
-
-- `LEAN_LOG_LEVEL`: Log level for the server. Options are "INFO", "WARNING", "ERROR", "NONE". Defaults to "INFO".
-- `LEAN_PROJECT_PATH`: Path to your Lean project root. Set this if the server cannot automatically detect your project.
-- `LEAN_LSP_MCP_TOKEN`: Secret token for bearer authentication when using `streamable-http` or `sse` transport.
-- `LEAN_STATE_SEARCH_URL`: URL for a self-hosted [premise-search.com](https://premise-search.com) instance.
-- `LEAN_HAMMER_URL`: URL for a self-hosted [Lean Hammer Premise Search](https://github.com/hanwenzhu/lean-premise-server) instance.
-
-You can also often set these environment variables in your MCP client configuration:
-<details>
-<summary><b>VSCode mcp.json Example</b></summary>
-
-```jsonc
-{
-    "servers": {
-        "lean-lsp": {
-            "type": "stdio",
-            "command": "uvx",
-            "args": [
-                "lean-lsp-mcp"
-            ],
-            "env": {
-                "LEAN_PROJECT_PATH": "/path/to/your/lean/project",
-                "LEAN_LOG_LEVEL": "NONE"
-            }
-        }
-    }
-}
-```
-</details>
-
-### Transport Methods
-
-The Lean LSP MCP server supports the following transport methods:
-
-- `stdio`: Standard input/output (default)
-- `streamable-http`: HTTP streaming
-- `sse`: Server-sent events (MCP legacy, use `streamable-http` if possible)
-
-You can specify the transport method using the `--transport` argument when running the server. For `sse` and `streamable-http` you can also optionally specify the host and port:
-
-```bash
-uvx lean-lsp-mcp --transport stdio # Default transport
-uvx lean-lsp-mcp --transport streamable-http # Available at http://127.0.0.1:8000/mcp
-uvx lean-lsp-mcp --transport sse --host localhost --port 12345 # Available at http://localhost:12345/sse
-```
-
-### Bearer Token Authentication
-
-Transport via `streamable-http` and `sse` supports bearer token authentication. This allows publicly accessible MCP servers to restrict access to authorized clients.
-
-Set the `LEAN_LSP_MCP_TOKEN` environment variable (or see section 3 for setting env variables in MCP config) to a secret token before starting the server.
-
-Example Linux/MacOS setup:
-
-```bash
-export LEAN_LSP_MCP_TOKEN="your_secret_token"
-uvx lean-lsp-mcp --transport streamable-http
-```
-
-Clients should then include the token in the `Authorization` header.
-
-## Notes on MCP Security
-
-There are many valid security concerns with the Model Context Protocol (MCP) in general!
-
-This MCP server is meant as a research tool and is currently in beta.
-While it does not handle any sensitive data such as passwords or API keys, it still includes various security risks:
-- Access to your local file system.
-- No input or output validation.
-
-Please be aware of these risks. Feel free to audit the code and report security issues!
-
-For more information, you can use [Awesome MCP Security](https://github.com/Puliczek/awesome-mcp-security) as a starting point.
-
-## Development
-
-### MCP Inspector
-
-```bash
-npx @modelcontextprotocol/inspector uvx --with-editable path/to/lean-lsp-mcp python -m lean_lsp_mcp.server
-```
-
-### Run Tests
-
-```bash
-uv sync --all-extras
-uv run pytest tests
-```
-
-## Publications using lean-lsp-mcp
-
-- Ax-Prover: A Deep Reasoning Agentic Framework for Theorem Proving in Mathematics and Quantum Physics [arxiv](https://arxiv.org/abs/2510.12787)
-
-## Related Projects
-
-- [LeanTool](https://github.com/GasStationManager/LeanTool)
-- [LeanExplore MCP](https://www.leanexplore.com/docs/mcp)
-
-## LAL Integration (Fork Feature)
-
-This fork includes [LAL (Lean Auto Linter)](https://github.com/e-vergo/LAL) integration for automated code analysis and fixing.
-
-### Setup LAL
-
-1. Clone and build LAL:
-   ```bash
-   git clone https://github.com/e-vergo/LAL
-   cd LAL && lake build lal
-   ```
-
-2. Set environment variable (optional, auto-detected if LAL is sibling to project):
-   ```bash
-   export LAL_PATH=/path/to/LAL/.lake/build/bin/lal
-   ```
-
-### LAL Tools
-
-#### lal_fix_diagnostics
-
-Auto-fix mechanical linter warnings in Lean files.
-
-**Supported Fixes:**
-
-| Fixer | Transformation |
-|-------|----------------|
-| unusedVariables | `unused` → `_unused` |
-| cdot | `.` → `·` |
-| lambdaSyntax | `λ` → `fun` |
-| dollarSyntax | `$` → `<\|` |
-| tryThis | Apply "Try this:" suggestions |
-| unusedSimpArgs | Remove unused simp arguments |
-
-<details>
-<summary>Example usage</summary>
-
-```python
-# Single file - dry run
-lal_fix_diagnostics(file_path="/path/to/file.lean", dry_run=True)
-
-# Single file - apply fixes
-lal_fix_diagnostics(file_path="/path/to/file.lean", dry_run=False)
-
-# Directory - recursive dry run
-lal_fix_diagnostics(file_path="/path/to/src", dry_run=True, recursive=True)
-
-# Directory - recursive apply
-lal_fix_diagnostics(file_path="/path/to/src", dry_run=False, recursive=True)
-```
-</details>
-
-#### lal_sorry_report
+#### `lal_sorry_report`
 
 Report `sorry` occurrences in Lean files.
 
-<details>
-<summary>Example usage</summary>
-
-```python
-# Basic report - counts only
-lal_sorry_report(file_path="/path/to/file.lean")
-
-# Verbose - include declarations and goals
-lal_sorry_report(file_path="/path/to/file.lean", verbose=True)
-
-# Directory - recursive scan
-lal_sorry_report(file_path="/path/to/src", recursive=True)
-
-# Filter by pattern
-lal_sorry_report(file_path="/path/to/src", recursive=True, glob_pattern="**/Theorem*.lean")
-```
-</details>
+| Parameter | Type | Required | Default | Description |
+|-----------|------|----------|---------|-------------|
+| `file_path` | string | Yes | - | Absolute path to file or directory |
+| `verbose` | boolean | No | `false` | Include declaration and goal fields |
+| `recursive` | boolean | No | `false` | Process directories recursively |
+| `glob_pattern` | string | No | - | Filter files (e.g., `"**/*.lean"`) |
 
 <details>
 <summary>Example output</summary>
@@ -641,26 +481,19 @@ lal_sorry_report(file_path="/path/to/src", recursive=True, glob_pattern="**/Theo
 ```
 </details>
 
-#### lal_custom_deps
+---
 
-Report custom (non-Mathlib) dependencies in Lean files.
+#### `lal_custom_deps`
 
-Identifies project-local imports that are not from standard libraries (Mathlib, Batteries, Lean, Init).
+Report custom (non-standard library) dependencies.
 
-<details>
-<summary>Example usage</summary>
+| Parameter | Type | Required | Default | Description |
+|-----------|------|----------|---------|-------------|
+| `file_path` | string | Yes | - | Absolute path to file or directory |
+| `recursive` | boolean | No | `false` | Process directories recursively |
+| `glob_pattern` | string | No | - | Filter files |
 
-```python
-# Single file
-lal_custom_deps(file_path="/path/to/file.lean")
-
-# Directory - recursive
-lal_custom_deps(file_path="/path/to/src", recursive=True)
-
-# Filter by pattern
-lal_custom_deps(file_path="/path/to/src", recursive=True, glob_pattern="**/*.lean")
-```
-</details>
+Identifies imports not from Mathlib, Batteries, Lean, or Init.
 
 <details>
 <summary>Example output</summary>
@@ -677,26 +510,33 @@ lal_custom_deps(file_path="/path/to/src", recursive=True, glob_pattern="**/*.lea
 ```
 </details>
 
-#### lal_file_context
+---
 
-Get combined file context: sorry count/locations, custom dependencies, and optional axiom information.
+#### `lal_trivial_report`
 
-Aggregates multiple LAL tools into a single response for quick file analysis.
+Report trivial statements (rfl, trivial, by decide, etc.).
 
-<details>
-<summary>Example usage</summary>
+| Parameter | Type | Required | Default | Description |
+|-----------|------|----------|---------|-------------|
+| `file_path` | string | Yes | - | Absolute path to file or directory |
+| `recursive` | boolean | No | `false` | Process directories recursively |
+| `glob_pattern` | string | No | - | Filter files |
 
-```python
-# Basic context
-lal_file_context(file_path="/path/to/file.lean")
+Identifies statements using `rfl`, `trivial`, `by decide`, or `by simp` with no arguments.
 
-# Verbose sorry details
-lal_file_context(file_path="/path/to/file.lean", verbose=True)
+---
 
-# Include axiom report for specific declaration
-lal_file_context(file_path="/path/to/file.lean", declaration="my_theorem")
-```
-</details>
+#### `lal_file_context`
+
+Get combined file context in a single call.
+
+| Parameter | Type | Required | Default | Description |
+|-----------|------|----------|---------|-------------|
+| `file_path` | string | Yes | - | Absolute path to Lean file |
+| `verbose` | boolean | No | `false` | Include full sorry details |
+| `declaration` | string | No | - | Include axiom info for this declaration |
+
+**Returns**: Aggregated sorry count, custom deps, and optional axiom info.
 
 <details>
 <summary>Example output</summary>
@@ -705,15 +545,9 @@ lal_file_context(file_path="/path/to/file.lean", declaration="my_theorem")
 {
   "file": "/path/to/file.lean",
   "sorry_count": 2,
-  "sorry_locations": [
-    {"line": 15, "column": 3},
-    {"line": 42, "column": 5}
-  ],
-  "custom_deps": ["MyProject.Helper", "MyProject.Types"],
-  "custom_deps_detailed": [
-    {"name": "MyProject.Helper", "line": 3},
-    {"name": "MyProject.Types", "line": 4}
-  ],
+  "sorry_locations": [{"line": 15, "column": 3}, {"line": 42, "column": 5}],
+  "custom_deps": ["MyProject.Helper"],
+  "custom_deps_detailed": [{"name": "MyProject.Helper", "line": 3}],
   "axioms": {
     "declaration": "my_theorem",
     "axioms": ["propext", "Classical.choice"],
@@ -723,18 +557,123 @@ lal_file_context(file_path="/path/to/file.lean", declaration="my_theorem")
 ```
 </details>
 
-## License & Citation
+---
 
-**MIT** licensed. See [LICENSE](LICENSE) for more information.
+### Analysis Tools
 
-Citing this repository is highly appreciated but not required by the license.
+#### `lean_axiom_report`
+
+Report axioms used by a declaration.
+
+| Parameter | Type | Required | Description |
+|-----------|------|----------|-------------|
+| `file_path` | string | Yes | Absolute path to Lean file |
+| `declaration_name` | string | Yes | Declaration name (case-sensitive) |
+
+**Returns**: `{declaration, axioms, count}` showing axiom dependencies.
+
+<details>
+<summary>Example output</summary>
+
+```json
+{
+  "declaration": "my_theorem",
+  "axioms": ["propext", "Classical.choice"],
+  "count": 2
+}
+```
+</details>
+
+---
+
+### Project Tools
+
+#### `lean_build`
+
+Rebuild the Lean project and restart the LSP server.
+
+| Parameter | Type | Required | Default | Description |
+|-----------|------|----------|---------|-------------|
+| `lean_project_path` | string | No | - | Path to project (auto-detected if omitted) |
+| `clean` | boolean | No | `false` | Run `lake clean` first (slow!) |
+
+---
+
+## Configuration
+
+### Environment Variables
+
+| Variable | Description | Default |
+|----------|-------------|---------|
+| `LEAN_PROJECT_PATH` | Lean project root path | Auto-detected |
+| `LEAN_LOG_LEVEL` | Log level: INFO, WARNING, ERROR, NONE | INFO |
+| `LEAN_LSP_MCP_TOKEN` | Bearer token for HTTP transport | - |
+| `LEAN_STATE_SEARCH_URL` | Self-hosted premise-search URL | https://premise-search.com |
+| `LEAN_HAMMER_URL` | Self-hosted Lean Hammer URL | http://leanpremise.net |
+| `LAL_PATH` | Path to LAL binary | Auto-detected |
+
+### Transport Methods
+
+```bash
+uvx lean-lsp-mcp --transport stdio              # Default
+uvx lean-lsp-mcp --transport streamable-http    # HTTP at :8000/mcp
+uvx lean-lsp-mcp --transport sse --port 12345   # SSE at :12345/sse
+```
+
+### LAL Setup
+
+For auto-linting features, [LAL](https://github.com/e-vergo/LAL) is auto-detected if installed as a sibling directory, or set `LAL_PATH`:
+
+```bash
+git clone https://github.com/e-vergo/LAL && cd LAL && lake build lal
+export LAL_PATH=/path/to/LAL/.lake/build/bin/lal
+```
+
+---
+
+## Security Notes
+
+This MCP server is a research tool in beta. It has file system access and no input validation. Please audit the code and report security issues.
+
+See [Awesome MCP Security](https://github.com/Puliczek/awesome-mcp-security) for general MCP security information.
+
+---
+
+## Development
+
+```bash
+# MCP Inspector
+npx @modelcontextprotocol/inspector uvx --with-editable . python -m lean_lsp_mcp.server
+
+# Run tests
+uv sync --all-extras
+uv run pytest tests
+```
+
+---
+
+## Publications
+
+- Ax-Prover: A Deep Reasoning Agentic Framework for Theorem Proving ([arXiv:2510.12787](https://arxiv.org/abs/2510.12787))
+
+## Related Projects
+
+- [LeanTool](https://github.com/GasStationManager/LeanTool)
+- [LeanExplore MCP](https://www.leanexplore.com/docs/mcp)
+
+---
+
+## License & Credits
+
+**MIT** licensed. See [LICENSE](LICENSE).
+
+This project builds on [lean-lsp-mcp](https://github.com/oOo0oOo/lean-lsp-mcp) by Oliver Dressler and integrates [LAL (Lean Auto Linter)](https://github.com/e-vergo/LAL).
 
 ```bibtex
 @software{lean-lsp-mcp,
   author = {Oliver Dressler},
   title = {{Lean LSP MCP: Tools for agentic interaction with the Lean theorem prover}},
   url = {https://github.com/oOo0oOo/lean-lsp-mcp},
-  month = {3},
   year = {2025}
 }
 ```
